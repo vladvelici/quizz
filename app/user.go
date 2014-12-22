@@ -23,6 +23,10 @@ func (user *User) populate(from *user.User) {
 	user.DisplayName = from.Email
 }
 
+// LogoutURL
+func (user *User) LogoutURL() {
+}
+
 // Generate a datastore key for the user with the given string ID.
 func Key(c appengine.Context, id string) *datastore.Key {
 	return datastore.NewKey(c, UserKind, id, 0, nil)

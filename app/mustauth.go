@@ -34,7 +34,9 @@ func MustAuth(ctx *C, f http.Handler) http.Handler {
 			RenderError(w, http.StatusInternalServerError)
 			return
 		}
-
+		// MustAuth return url after logout is the homepage
+		ctx.ViewParams["LogoutURL"], _ = user.LogoutURL(c, "/")
+		ctx.ViewParams["User"] = ctx.CurrentUser
 		f.ServeHTTP(w, r)
 	}
 
@@ -47,6 +49,7 @@ func Auth(ctx *C, f http.Handler) http.Handler {
 	ret := func(w http.ResponseWriter, r *http.Request) {
 		c := appengine.NewContext(r)
 		usr := user.Current(c)
+		returnUrl := r.URL.RequestURI()
 		if usr != nil {
 			var err error
 			ctx.CurrentUser, err = UserFetchOrCreate(c, usr)
@@ -55,7 +58,10 @@ func Auth(ctx *C, f http.Handler) http.Handler {
 				RenderError(w, http.StatusInternalServerError)
 				return
 			}
+			ctx.ViewParams["LogoutURL"], _ = user.LogoutURL(c, returnUrl)
+			ctx.ViewParams["User"] = ctx.CurrentUser
 		}
+		ctx.ViewParams["LoginURL"], _ = user.LoginURL(c, returnUrl)
 		f.ServeHTTP(w, r)
 	}
 
