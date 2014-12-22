@@ -28,7 +28,7 @@ func MustAuth(ctx *C, f http.Handler) http.Handler {
 		}
 
 		var err error
-		ctx.CurrentUser, err = FetchOrCreate(c, usr)
+		ctx.CurrentUser, err = UserFetchOrCreate(c, usr)
 		if err != nil {
 			c.Criticalf("Error fetching/creating user: %s", err)
 			RenderError(w, http.StatusInternalServerError)
@@ -47,15 +47,15 @@ func Auth(ctx *C, f http.Handler) http.Handler {
 	ret := func(w http.ResponseWriter, r *http.Request) {
 		c := appengine.NewContext(r)
 		usr := user.Current(c)
-
-		var err error
-		ctx.CurrentUser, err = FetchOrCreate(c, usr)
-		if err != nil {
-			c.Criticalf("Error fetching/creating user: %s", err)
-			RenderError(w, http.StatusInternalServerError)
-			return
+		if usr != nil {
+			var err error
+			ctx.CurrentUser, err = UserFetchOrCreate(c, usr)
+			if err != nil {
+				c.Criticalf("Error fetching/creating user: %s", err)
+				RenderError(w, http.StatusInternalServerError)
+				return
+			}
 		}
-
 		f.ServeHTTP(w, r)
 	}
 

@@ -6,16 +6,11 @@ import (
 )
 
 func init() {
-	http.HandleFunc("/", handle)
-	http.Handle("/usr/", Mid(handle2, MustAuth))
+	RegisterRoutes()
 }
 
-func handle(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "handle 1 updated")
-}
-
-func handle2(c *C) http.Handler {
+func HomePage(c *C) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello dear user. %#v", *c.CurrentUser)
+		fmt.Fprintf(w, "This is the home page. The user if any: %#v", c.CurrentUser)
 	})
 }

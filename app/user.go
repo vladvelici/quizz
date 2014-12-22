@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	DatastoreKind = "User"
+	// Datastore Entity kind for users
+	UserKind = "User"
 )
 
 type User struct {
@@ -16,19 +17,26 @@ type User struct {
 	DisplayName string
 }
 
-// Generate a datastore key for the user with the given string ID.
-func Key(c appengine.Context, id string) *datastore.Key {
-	return datastore.NewKey(c, DatastoreKind, id, 0, nil)
+func (user *User) populate(from *user.User) {
+	user.Email = from.Email
+	user.Id = from.ID
+	user.DisplayName = from.Email
 }
 
-func FetchOrCreate(c appengine.Context, u *user.User) (*User, error) {
+// Generate a datastore key for the user with the given string ID.
+func Key(c appengine.Context, id string) *datastore.Key {
+	return datastore.NewKey(c, UserKind, id, 0, nil)
+}
+
+// Fetch a user from the datastore or cancel its premises.
+func UserFetchOrCreate(c appengine.Context, u *user.User) (*User, error) {
 	k := Key(c, u.ID)
 	var user User
 	err := datastore.Get(c, k, &user)
 
 	// Add user if does not exist
 	if err == datastore.ErrNoSuchEntity {
-		populate(&user, u)
+		user.populate(u)
 		_, err = datastore.Put(c, k, &user)
 		c.Infof("Added new user %s. %s", user.Id, err)
 	}
@@ -45,10 +53,4 @@ func FetchOrCreate(c appengine.Context, u *user.User) (*User, error) {
 	}
 
 	return &user, err
-}
-
-func populate(user *User, from *user.User) {
-	user.Email = from.Email
-	user.Id = from.ID
-	user.DisplayName = from.Email
 }
