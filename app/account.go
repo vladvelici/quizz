@@ -8,8 +8,9 @@ import (
 // Must enforce MustAuth in routes.
 func AccountGet(c *C) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c.ViewParams["PageTitle"] = "Quizz - My account"
-		c.RenderHTML(w, http.StatusOK, "account")
+		c.PageParam("PageTitle", "Quizz - My account")
+		c.Params["User"] = c.CurrentUser
+		c.Render(w, http.StatusOK, "account")
 	})
 }
 

@@ -1,0 +1,7 @@
+// Rename this file to "constants.go" and set the constants above.
+
+package app
+
+const (
+	CookieSecret = "Long_Cookie_Secret_Goes_Here"
+)

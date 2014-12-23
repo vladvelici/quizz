@@ -13,25 +13,72 @@ type Ctrl func(*C) http.Handler
 // Request context
 type C struct {
 	CurrentUser *User
-	ViewParams  map[string]interface{}
+	Params      map[string]interface{}
+	IsApi       bool
 }
 
+// Add a parameter to c.Params only if it's an api call.
+func (c *C) ApiParam(key string, value interface{}) {
+	if c.IsApi == true {
+		c.Params[key] = value
+	}
+}
+
+// Add a parameter to c.Params only if it's a page call.
+func (c *C) PageParam(key string, value interface{}) {
+	if c.IsApi == false {
+		c.Params[key] = value
+	}
+}
+
+// Render JSON if c.IsApi == true, or HTML otherwise. Uses c.Params as data.
+//
+// This method is suitable for GET requests, where some data needs to be given
+// back on both API and website requests.
+//
+// For POST requests, use c.Ok, c.Fail, or c.Data, as they render JSON for
+// API calls and add a flash message and redirect for website requests.
+func (c *C) Render(w http.ResponseWriter, status int, template string) {
+	if c.IsApi {
+		c.RenderJSON(w, status)
+	} else {
+		c.RenderHTML(w, status, template)
+	}
+}
+
+// Same as c.Render(), except it uses the given data instead of c.Params.
+func (c *C) RenderData(w http.ResponseWriter, r *http.Request, status int, template string, data interface{}) {
+	if c.IsApi {
+		c.RenderJSONData(w, status, data)
+	} else {
+		c.RenderHTMLData(w, status, template, data)
+	}
+}
+
+// Render HTML using c.Params as data.
 func (c *C) RenderHTML(w http.ResponseWriter, status int, template string) {
-	rndr.HTML(w, status, template, c.ViewParams)
+	rndr.HTML(w, status, template, c.Params)
 }
 
+// Render HTML using the given data.
 func (c *C) RenderHTMLData(w http.ResponseWriter, status int, template string, data interface{}) {
 	rndr.HTML(w, status, template, data)
 }
 
-func (c *C) RenderJSON(w http.ResponseWriter, status int, data interface{}) {
+// Render JSON using c.Params.
+func (c *C) RenderJSON(w http.ResponseWriter, status int) {
+	rndr.JSON(w, status, c.Params)
+}
+
+// Render JSON using given data.
+func (c *C) RenderJSONData(w http.ResponseWriter, status int, data interface{}) {
 	rndr.JSON(w, status, data)
 }
 
 // Redirect or output JSON "status: ok".
 func (c *C) Ok(w http.ResponseWriter, r *http.Request) {
 	if IsApi(r) {
-		c.RenderJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+		c.RenderJSONData(w, http.StatusOK, map[string]string{"status": "ok"})
 	} else {
 		// TODO: add success flash message
 		c.Redirect(w, r.URL.RequestURI())
@@ -41,7 +88,7 @@ func (c *C) Ok(w http.ResponseWriter, r *http.Request) {
 // Redirect or output JSON "status: fail".
 func (c *C) Fail(w http.ResponseWriter, r *http.Request) {
 	if IsApi(r) {
-		c.RenderJSON(w, http.StatusOK, map[string]string{"status": "fail"})
+		c.RenderJSONData(w, http.StatusOK, map[string]string{"status": "fail"})
 	} else {
 		// TODO: add failure flash message
 		c.Redirect(w, r.URL.RequestURI())
@@ -51,7 +98,7 @@ func (c *C) Fail(w http.ResponseWriter, r *http.Request) {
 // Redirect or output given JSON data.
 func (c *C) Data(w http.ResponseWriter, r *http.Request, data interface{}) {
 	if IsApi(r) {
-		c.RenderJSON(w, http.StatusOK, data)
+		c.RenderJSONData(w, http.StatusOK, data)
 	} else {
 		// TODO: add success flash message
 		c.Redirect(w, r.URL.RequestURI())
@@ -87,8 +134,9 @@ func IsApi(r *http.Request) bool {
 func Mid(h Ctrl, mid ...Middleware) http.Handler {
 	ret := func(w http.ResponseWriter, r *http.Request) {
 		ctx := new(C)
-		ctx.ViewParams = make(map[string]interface{})
-		ctx.ViewParams["PageTitle"] = "Quizz"
+		ctx.IsApi = IsApi(r)
+		ctx.Params = make(map[string]interface{})
+		ctx.Params["PageTitle"] = "Quizz"
 		f := h(ctx)
 		for i := len(mid) - 1; i >= 0; i-- {
 			f = mid[i](ctx, f)
