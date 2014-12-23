@@ -1,3 +1,6 @@
+# Quizz configuration file (contains sensitive constants)
+app/constants.go
+
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
 *.a
