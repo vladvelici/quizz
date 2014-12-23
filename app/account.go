@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"net/http"
 )
 
@@ -10,7 +9,7 @@ import (
 func AccountGet(c *C) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c.ViewParams["PageTitle"] = "Quizz - My account"
-		rndr.HTML(w, http.StatusOK, "account", c.ViewParams)
+		c.RenderHTML(w, http.StatusOK, "account")
 	})
 }
 
@@ -18,6 +17,7 @@ func AccountGet(c *C) http.Handler {
 // Must enforce MustAuth in routes.
 func AccountPost(c *C) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello dear user. This is a POST method. %#v", *c.CurrentUser)
+		// TODO: Validate the new DisplayName, and update the user model.
+		c.Ok(w, r)
 	})
 }

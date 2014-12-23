@@ -10,6 +10,7 @@ var rndr *render.Render
 
 func init() {
 	RegisterRoutes()
+
 	rndr = render.New(render.Options{
 		Directory:  "templates",
 		Layout:     "layout",
