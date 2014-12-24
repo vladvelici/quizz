@@ -2,6 +2,8 @@ package app
 
 import (
 	"net/http"
+
+	"github.com/gorilla/sessions"
 )
 
 // Middleware type
@@ -15,6 +17,7 @@ type C struct {
 	CurrentUser *User
 	Params      map[string]interface{}
 	IsApi       bool
+	Session     *sessions.Session
 }
 
 // Add a parameter to c.Params only if it's an api call.
@@ -80,7 +83,7 @@ func (c *C) Ok(w http.ResponseWriter, r *http.Request) {
 	if IsApi(r) {
 		c.RenderJSONData(w, http.StatusOK, map[string]string{"status": "ok"})
 	} else {
-		// TODO: add success flash message
+		c.Session.AddFlash("All done!", "_flash_success")
 		c.Redirect(w, r.URL.RequestURI())
 	}
 }
@@ -90,7 +93,7 @@ func (c *C) Fail(w http.ResponseWriter, r *http.Request) {
 	if IsApi(r) {
 		c.RenderJSONData(w, http.StatusOK, map[string]string{"status": "fail"})
 	} else {
-		// TODO: add failure flash message
+		c.Session.AddFlash("Something went wrong :(", "_flash_failure")
 		c.Redirect(w, r.URL.RequestURI())
 	}
 }
@@ -100,7 +103,7 @@ func (c *C) Data(w http.ResponseWriter, r *http.Request, data interface{}) {
 	if IsApi(r) {
 		c.RenderJSONData(w, http.StatusOK, data)
 	} else {
-		// TODO: add success flash message
+		c.Session.AddFlash(data, "_flash_success")
 		c.Redirect(w, r.URL.RequestURI())
 	}
 }
@@ -136,7 +139,8 @@ func Mid(h Ctrl, mid ...Middleware) http.Handler {
 		ctx := new(C)
 		ctx.IsApi = IsApi(r)
 		ctx.Params = make(map[string]interface{})
-		ctx.Params["PageTitle"] = "Quizz"
+		ctx.PageParam("PageTitle", "Quizz")
+		ctx.Session = store.Get(r, "main-session")
 		f := h(ctx)
 		for i := len(mid) - 1; i >= 0; i-- {
 			f = mid[i](ctx, f)
