@@ -12,6 +12,14 @@ type Middleware func(Ctrl) Ctrl
 // Controller creator type
 type Ctrl func(w http.ResponseWriter, r *http.Request, c *C)
 
+// Convenience method to return a http.HandlerFunc using a context.
+func (f Ctrl) HandleFunc(c *C) http.HandlerFunc {
+	h := func(w http.ResponseWriter, r *http.Request) {
+		f(w, r, c)
+	}
+	return http.HandlerFunc(h)
+}
+
 // Request context
 type C struct {
 	CurrentUser *User
