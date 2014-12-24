@@ -5,8 +5,6 @@ import (
 )
 
 // HomePage controller
-func HomePage(c *C) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c.RenderHTML(w, http.StatusOK, "homepage")
-	})
+func HomePage(w http.ResponseWriter, r *http.Request, c *C) {
+	c.RenderHTML(w, http.StatusOK, "homepage")
 }

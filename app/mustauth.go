@@ -14,8 +14,8 @@ import (
 // page requested.
 //
 // This function does not check for existing users in the datastore.
-func MustAuth(ctx *C, f http.Handler) http.Handler {
-	ret := func(w http.ResponseWriter, r *http.Request) {
+func MustAuth(f Ctrl) Ctrl {
+	ret := func(w http.ResponseWriter, r *http.Request, ctx *C) {
 		c := appengine.NewContext(r)
 		usr := user.Current(c)
 		if usr == nil {
@@ -38,16 +38,16 @@ func MustAuth(ctx *C, f http.Handler) http.Handler {
 		logoutUrl, _ := user.LogoutURL(c, "/")
 		ctx.PageParam("LogoutURL", logoutUrl)
 		ctx.PageParam("User", ctx.CurrentUser)
-		f.ServeHTTP(w, r)
+		f(w, r, ctx)
 	}
 
-	return http.HandlerFunc(ret)
+	return Ctrl(ret)
 }
 
 // If user exists in the Appengine context, add it to ctx.
 // If there's no user, just keep going...
-func Auth(ctx *C, f http.Handler) http.Handler {
-	ret := func(w http.ResponseWriter, r *http.Request) {
+func Auth(f Ctrl) Ctrl {
+	ret := func(w http.ResponseWriter, r *http.Request, ctx *C) {
 		c := appengine.NewContext(r)
 		usr := user.Current(c)
 		returnUrl := r.URL.RequestURI()
@@ -65,8 +65,8 @@ func Auth(ctx *C, f http.Handler) http.Handler {
 		}
 		loginUrl, _ := user.LoginURL(c, returnUrl)
 		ctx.PageParam("LoginURL", loginUrl)
-		f.ServeHTTP(w, r)
+		f(w, r, ctx)
 	}
 
-	return http.HandlerFunc(ret)
+	return Ctrl(ret)
 }

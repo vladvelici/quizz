@@ -7,10 +7,10 @@ import (
 )
 
 // Middleware type
-type Middleware func(*C, http.Handler) http.Handler
+type Middleware func(Ctrl) Ctrl
 
 // Controller creator type
-type Ctrl func(*C) http.Handler
+type Ctrl func(w http.ResponseWriter, r *http.Request, c *C)
 
 // Request context
 type C struct {
@@ -135,17 +135,17 @@ func IsApi(r *http.Request) bool {
 // Create a context, create the controller using the context, and
 // create a http.Handler that combines all the middleware.
 func Mid(h Ctrl, mid ...Middleware) http.Handler {
+	f := h
+	for i := len(mid) - 1; i >= 0; i-- {
+		f = mid[i](f)
+	}
 	ret := func(w http.ResponseWriter, r *http.Request) {
 		ctx := new(C)
 		ctx.IsApi = IsApi(r)
 		ctx.Params = make(map[string]interface{})
 		ctx.PageParam("PageTitle", "Quizz")
-		ctx.Session = store.Get(r, "main-session")
-		f := h(ctx)
-		for i := len(mid) - 1; i >= 0; i-- {
-			f = mid[i](ctx, f)
-		}
-		f.ServeHTTP(w, r)
+		ctx.Session, _ = store.Get(r, "main-session")
+		f(w, r, ctx)
 	}
 	return http.HandlerFunc(ret)
 }
