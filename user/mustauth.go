@@ -17,7 +17,7 @@ import (
 //
 // This function does not check for existing users in the datastore.
 func MustAuth(f infra.Ctrl) infra.Ctrl {
-	ret := func(w http.ResponseWriter, r *http.Request, ctx *infra.C) error {
+	ret := func(w http.ResponseWriter, r *http.Request, ctx *infra.C) {
 		c := appengine.NewContext(r)
 		usr := user.Current(c)
 		if usr == nil {
@@ -26,20 +26,22 @@ func MustAuth(f infra.Ctrl) infra.Ctrl {
 			loginUrl, _ := user.LoginURL(c, returnUrl)
 			w.Header().Set("Location", loginUrl)
 			w.WriteHeader(http.StatusFound)
-			return nil
+			return
 		}
 
 		var err error
 		ctx.CurrentUser, err = fetchOrCreate(c, usr)
 		if err != nil {
 			c.Criticalf("Error fetching/creating user: %s", err)
-			return infra.NewError(http.StatusInternalServerError, "User database error. Please try again.")
+			ierr := infra.NewError(http.StatusInternalServerError, "User database error. Please try again.")
+			ctx.RenderError(w, ierr)
+			return
 		}
 		// MustAuth return url after logout is the homepage
 		logoutUrl, _ := user.LogoutURL(c, "/")
 		ctx.PageParam("LogoutURL", logoutUrl)
 		ctx.PageParam("User", ctx.CurrentUser)
-		return f(w, r, ctx)
+		f(w, r, ctx)
 	}
 
 	return infra.Ctrl(ret)
@@ -48,7 +50,7 @@ func MustAuth(f infra.Ctrl) infra.Ctrl {
 // If user exists in the Appengine context, add it to ctx.
 // If there's no user, just keep going...
 func Auth(f infra.Ctrl) infra.Ctrl {
-	ret := func(w http.ResponseWriter, r *http.Request, ctx *infra.C) error {
+	ret := func(w http.ResponseWriter, r *http.Request, ctx *infra.C) {
 		c := appengine.NewContext(r)
 		usr := user.Current(c)
 		returnUrl := r.URL.RequestURI()
@@ -57,7 +59,9 @@ func Auth(f infra.Ctrl) infra.Ctrl {
 			ctx.CurrentUser, err = fetchOrCreate(c, usr)
 			if err != nil {
 				c.Criticalf("Error fetching/creating user: %s", err)
-				return infra.NewError(http.StatusInternalServerError, "User database error. Please try again.")
+				ierr := infra.NewError(http.StatusInternalServerError, "User database error. Please try again.")
+				ctx.RenderError(w, ierr)
+				return
 			}
 			logoutUrl, _ := user.LogoutURL(c, returnUrl)
 			ctx.PageParam("LogoutURL", logoutUrl)
@@ -65,7 +69,7 @@ func Auth(f infra.Ctrl) infra.Ctrl {
 		}
 		loginUrl, _ := user.LoginURL(c, returnUrl)
 		ctx.PageParam("LoginURL", loginUrl)
-		return f(w, r, ctx)
+		f(w, r, ctx)
 	}
 
 	return infra.Ctrl(ret)

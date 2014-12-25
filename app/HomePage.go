@@ -6,7 +6,6 @@ import (
 )
 
 // HomePage controller
-func HomePage(w http.ResponseWriter, r *http.Request, c *infra.C) error {
+func HomePage(w http.ResponseWriter, r *http.Request, c *infra.C) {
 	c.RenderHTML(w, http.StatusOK, "homepage")
-	return nil
 }

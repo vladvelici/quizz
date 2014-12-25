@@ -21,7 +21,7 @@ var rndr = render.New(render.Options{
 var store = sessions.NewCookieStore([]byte(CookieSecret))
 
 // Controller type
-type Ctrl func(w http.ResponseWriter, r *http.Request, c *C) error
+type Ctrl func(w http.ResponseWriter, r *http.Request, c *C)
 
 // Convenience method to return a http.HandlerFunc using a context.
 func (f Ctrl) HandlerFunc(c *C) http.HandlerFunc {
