@@ -1,7 +1,9 @@
-package app
+package user
 
 import (
 	"net/http"
+
+	"github.com/vladvelici/quizz/infra"
 
 	"appengine"
 	"appengine/user"
@@ -14,8 +16,8 @@ import (
 // page requested.
 //
 // This function does not check for existing users in the datastore.
-func MustAuth(f Ctrl) Ctrl {
-	ret := func(w http.ResponseWriter, r *http.Request, ctx *C) {
+func MustAuth(f infra.Ctrl) infra.Ctrl {
+	ret := func(w http.ResponseWriter, r *http.Request, ctx *infra.C) error {
 		c := appengine.NewContext(r)
 		usr := user.Current(c)
 		if usr == nil {
@@ -24,40 +26,38 @@ func MustAuth(f Ctrl) Ctrl {
 			loginUrl, _ := user.LoginURL(c, returnUrl)
 			w.Header().Set("Location", loginUrl)
 			w.WriteHeader(http.StatusFound)
-			return
+			return nil
 		}
 
 		var err error
-		ctx.CurrentUser, err = UserFetchOrCreate(c, usr)
+		ctx.CurrentUser, err = fetchOrCreate(c, usr)
 		if err != nil {
 			c.Criticalf("Error fetching/creating user: %s", err)
-			RenderError(w, http.StatusInternalServerError)
-			return
+			return infra.NewError(http.StatusInternalServerError, "User database error. Please try again.")
 		}
 		// MustAuth return url after logout is the homepage
 		logoutUrl, _ := user.LogoutURL(c, "/")
 		ctx.PageParam("LogoutURL", logoutUrl)
 		ctx.PageParam("User", ctx.CurrentUser)
-		f(w, r, ctx)
+		return f(w, r, ctx)
 	}
 
-	return Ctrl(ret)
+	return infra.Ctrl(ret)
 }
 
 // If user exists in the Appengine context, add it to ctx.
 // If there's no user, just keep going...
-func Auth(f Ctrl) Ctrl {
-	ret := func(w http.ResponseWriter, r *http.Request, ctx *C) {
+func Auth(f infra.Ctrl) infra.Ctrl {
+	ret := func(w http.ResponseWriter, r *http.Request, ctx *infra.C) error {
 		c := appengine.NewContext(r)
 		usr := user.Current(c)
 		returnUrl := r.URL.RequestURI()
 		if usr != nil {
 			var err error
-			ctx.CurrentUser, err = UserFetchOrCreate(c, usr)
+			ctx.CurrentUser, err = fetchOrCreate(c, usr)
 			if err != nil {
 				c.Criticalf("Error fetching/creating user: %s", err)
-				RenderError(w, http.StatusInternalServerError)
-				return
+				return infra.NewError(http.StatusInternalServerError, "User database error. Please try again.")
 			}
 			logoutUrl, _ := user.LogoutURL(c, returnUrl)
 			ctx.PageParam("LogoutURL", logoutUrl)
@@ -65,8 +65,8 @@ func Auth(f Ctrl) Ctrl {
 		}
 		loginUrl, _ := user.LoginURL(c, returnUrl)
 		ctx.PageParam("LoginURL", loginUrl)
-		f(w, r, ctx)
+		return f(w, r, ctx)
 	}
 
-	return Ctrl(ret)
+	return infra.Ctrl(ret)
 }

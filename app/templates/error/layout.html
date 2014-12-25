@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Quizz - Error {{.Status}}</title>
+        <link rel="stylesheet" href="static/css/all.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <header class="row">
+            <div class="container">
+                <div class="three columns"><a href="/">Quizz</a></div>
+                <div class="nine columns" id='head-menu'>
+                    some menu goes here
+                </div>
+            </div>
+        </header>
+        {{ yield }}
+    </body>
+</html>
+

@@ -1,4 +1,4 @@
-package app
+package user
 
 import (
 	"appengine"
@@ -8,7 +8,7 @@ import (
 
 const (
 	// Datastore Entity kind for users
-	UserKind = "User"
+	AppengineKind = "User"
 )
 
 type User struct {
@@ -17,24 +17,36 @@ type User struct {
 	DisplayName string
 }
 
+// Getter to implement infra.User
+func (u *User) GetId() string {
+	return u.Id
+}
+
+// Getter to implement infra.User
+func (u *User) GetEmail() string {
+	return u.Email
+}
+
+// Getter to implement infra.User
+func (u *User) GetDisplayName() string {
+	return u.DisplayName
+}
+
+// Populate user from Appengine user.
 func (user *User) populate(from *user.User) {
 	user.Email = from.Email
 	user.Id = from.ID
 	user.DisplayName = from.Email
 }
 
-// LogoutURL
-func (user *User) LogoutURL() {
-}
-
 // Generate a datastore key for the user with the given string ID.
-func UserKey(c appengine.Context, id string) *datastore.Key {
-	return datastore.NewKey(c, UserKind, id, 0, nil)
+func Key(c appengine.Context, id string) *datastore.Key {
+	return datastore.NewKey(c, AppengineKind, id, 0, nil)
 }
 
 // Fetch a user from the datastore or cancel its premises.
-func UserFetchOrCreate(c appengine.Context, u *user.User) (*User, error) {
-	k := UserKey(c, u.ID)
+func fetchOrCreate(c appengine.Context, u *user.User) (*User, error) {
+	k := Key(c, u.ID)
 	var user User
 	err := datastore.Get(c, k, &user)
 

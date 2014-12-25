@@ -1,28 +1,22 @@
-package app
+package infra
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/sessions"
+	"gopkg.in/unrolled/render.v1"
 )
 
-// Middleware type
-type Middleware func(Ctrl) Ctrl
-
-// Controller creator type
-type Ctrl func(w http.ResponseWriter, r *http.Request, c *C)
-
-// Convenience method to return a http.HandlerFunc using a context.
-func (f Ctrl) HandleFunc(c *C) http.HandlerFunc {
-	h := func(w http.ResponseWriter, r *http.Request) {
-		f(w, r, c)
-	}
-	return http.HandlerFunc(h)
+type User interface {
+	GetId() string
+	GetEmail() string
+	GetDisplayName() string
 }
 
 // Request context
 type C struct {
-	CurrentUser *User
+	CurrentUser User
 	Params      map[string]interface{}
 	IsApi       bool
 	Session     *sessions.Session
@@ -86,6 +80,20 @@ func (c *C) RenderJSONData(w http.ResponseWriter, status int, data interface{}) 
 	rndr.JSON(w, status, data)
 }
 
+// Render an error page if HTML or a JSON describing the error otherwise.
+func (c *C) RenderError(w http.ResponseWriter, err error) {
+	infraErr, ok := err.(*Error)
+	if !ok {
+		infraErr = NewError(http.StatusInternalServerError, err.Error())
+	}
+	if c.IsApi {
+		c.RenderJSONData(w, infraErr.Status, map[string]string{"status": "fail", "message": infraErr.Message})
+	} else {
+		template := "error/" + strconv.Itoa(infraErr.Status)
+		rndr.HTML(w, infraErr.Status, template, infraErr, render.HTMLOptions{Layout: "error/layout"})
+	}
+}
+
 // Redirect or output JSON "status: ok".
 func (c *C) Ok(w http.ResponseWriter, r *http.Request) {
 	if IsApi(r) {
@@ -138,22 +146,4 @@ func IsApi(r *http.Request) bool {
 	}
 
 	return false
-}
-
-// Create a context, create the controller using the context, and
-// create a http.Handler that combines all the middleware.
-func Mid(h Ctrl, mid ...Middleware) http.Handler {
-	f := h
-	for i := len(mid) - 1; i >= 0; i-- {
-		f = mid[i](f)
-	}
-	ret := func(w http.ResponseWriter, r *http.Request) {
-		ctx := new(C)
-		ctx.IsApi = IsApi(r)
-		ctx.Params = make(map[string]interface{})
-		ctx.PageParam("PageTitle", "Quizz")
-		ctx.Session, _ = store.Get(r, "main-session")
-		f(w, r, ctx)
-	}
-	return http.HandlerFunc(ret)
 }

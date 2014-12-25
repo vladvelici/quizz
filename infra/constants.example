@@ -1,6 +1,6 @@
 // Rename this file to "constants.go" and set the constants above.
 
-package app
+package infra
 
 const (
 	CookieSecret = "Long_Cookie_Secret_Goes_Here"
