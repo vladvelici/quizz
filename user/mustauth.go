@@ -21,11 +21,19 @@ func MustAuth(f infra.Ctrl) infra.Ctrl {
 		c := appengine.NewContext(r)
 		usr := user.Current(c)
 		if usr == nil {
-			// redirect to authentication
-			returnUrl := r.URL.RequestURI()
-			loginUrl, _ := user.LoginURL(c, returnUrl)
-			w.Header().Set("Location", loginUrl)
-			w.WriteHeader(http.StatusFound)
+			if ctx.IsApi {
+				// render unauthenticated json
+				ctx.RenderJSONData(w, http.StatusUnauthorized, map[string]string{
+					"status": "fail",
+					"reason": "unauthorized",
+				})
+			} else {
+				// redirect to authentication
+				returnUrl := r.URL.RequestURI()
+				loginUrl, _ := user.LoginURL(c, returnUrl)
+				w.Header().Set("Location", loginUrl)
+				w.WriteHeader(http.StatusFound)
+			}
 			return
 		}
 
